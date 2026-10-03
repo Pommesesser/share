@@ -5,9 +5,9 @@ use std::path::Path;
 use tokio::io::AsyncWriteExt;
 use tokio_util::io::ReaderStream;
 
-const SERVER: &str = "https://share-server.de";
+pub const SERVER: &str = "https://share-server.de";
 
-pub async fn upload(path: &str) {
+pub async fn upload(path: &str) -> String {
     let path = Path::new(path);
 
     let filename = path
@@ -33,15 +33,10 @@ pub async fn upload(path: &str) {
         panic!("server returned {}", response.status());
     }
 
-    let id = response.text().await.expect("failed to read response");
-
-    println!(
-        "{}/files/{id}",
-        SERVER.strip_prefix("https://").unwrap_or(SERVER)
-    );
+    response.text().await.expect("failed to read response")
 }
 
-pub async fn get(id: &str) {
+pub async fn get(id: &str) -> String {
     let response = reqwest::Client::new()
         .get(format!("{SERVER}/files/{id}"))
         .bearer_auth(API_KEY)
@@ -73,10 +68,10 @@ pub async fn get(id: &str) {
         file.write_all(&chunk).await.expect("failed to write file");
     }
 
-    println!("downloaded {filename}");
+    filename
 }
 
-pub async fn list() {
+pub async fn list() -> Vec<FileEntry> {
     let response = reqwest::Client::new()
         .get(format!("{SERVER}/files"))
         .bearer_auth(API_KEY)
@@ -92,16 +87,9 @@ pub async fn list() {
         .json::<Vec<FileEntry>>()
         .await
         .expect("failed to read response")
-        .iter()
-        .for_each(|file_entry| {
-            println!(
-                "{} | {} | {}",
-                file_entry.id, file_entry.name, file_entry.size
-            )
-        })
 }
 
-pub async fn remove(id: &str) {
+pub async fn remove(id: &str) -> String {
     let response = reqwest::Client::new()
         .delete(format!("{SERVER}/files/{id}"))
         .bearer_auth(API_KEY)
@@ -113,7 +101,5 @@ pub async fn remove(id: &str) {
         panic!("server returned {}", response.status());
     }
 
-    let name = response.text().await.expect("failed to read response body");
-
-    println!("removed {name}");
+    response.text().await.expect("failed to read response body")
 }
