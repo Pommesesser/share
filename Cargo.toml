@@ -1,0 +1,8 @@
+[workspace]
+members = [
+  "share-core",
+  "share-cli",
+  "share-server",
+]
+
+resolver = "3"
